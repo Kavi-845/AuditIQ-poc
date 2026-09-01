@@ -63,8 +63,8 @@ def get_snowflake_config():
             "authenticator": "SNOWFLAKE_JWT",
             "role": "LLM_CODE_REVIEW",
             "warehouse": "MONITOR_WH",
-            "database": "ADMIN",
-            "schema": "PUBLIC",
+            "database": "AUDITIQ",
+            "schema": "AUDITIQ_POC",
         }
     else:
         # Fallback to hardcoded values (for repos without env setup)
