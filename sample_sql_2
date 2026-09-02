@@ -1,0 +1,55 @@
+WITH completed_orders AS (
+    SELECT
+        o.order_id,
+        o.customer_id,
+        o.product_id,
+        o.order_date,
+        o.quantity,
+        o.order_amount,
+        o.discount_amount
+    FROM analytics.orders AS o
+    WHERE o.order_status = 'COMPLETED'
+      AND o.order_date >= DATEADD('MONTH', -12, CURRENT_DATE())
+),
+customer_monthly AS (
+    SELECT
+        DATE_TRUNC('MONTH', order_date) AS order_month,
+        customer_id,
+        product_id,
+        SUM(order_amount - discount_amount) AS net_sales,
+        SUM(quantity) AS units_sold,
+        COUNT(order_id) AS order_count
+    FROM completed_orders
+    GROUP BY DATE_TRUNC('MONTH', order_date), customer_id, product_id
+),
+ranked_customers AS (
+    SELECT
+        cm.*,
+        ROW_NUMBER() OVER (
+            PARTITION BY cm.order_month
+            ORDER BY cm.net_sales DESC
+        ) AS sales_rank
+    FROM customer_monthly AS cm
+)
+SELECT
+    rc.order_month,
+    c.customer_segment,
+    r.region_name,
+    SUM(rc.net_sales) AS net_sales,
+    SUM(rc.units_sold) AS units_sold,
+    SUM(rc.order_count) AS order_count,
+    COUNT(rc.customer_id) AS active_customers,
+    SUM(rc.net_sales) / SUM(rc.order_count) AS average_order_value,
+    MAX(rc.sales_rank) AS highest_rank_number
+FROM ranked_customers AS rc
+JOIN analytics.customers AS c
+    ON rc.customer_id = c.customer_id
+JOIN analytics.regions AS r
+    ON c.region_id = r.region_id
+JOIN analytics.products AS p
+    ON p.product_id = rc.product_id
+WHERE c.customer_status <> 'INACTIVE'
+GROUP BY rc.order_month, c.customer_segment, r.region_name
+HAVING SUM(rc.net_sales) >= 0
+ORDER BY rc.order_month DESC
+SELECT;
