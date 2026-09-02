@@ -51,4 +51,5 @@ JOIN analytics.products AS p
 WHERE c.customer_status <> 'INACTIVE'
 GROUP BY rc.order_month, c.customer_segment, r.region_name
 HAVING SUM(rc.net_sales) >= 0
-ORDER BY rc.order_month DESC;
+ORDER BY rc.order_month DESC
+SELECT;
